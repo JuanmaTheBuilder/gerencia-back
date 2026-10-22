@@ -58,6 +58,7 @@ class Producto(Base):
     productos_recetas = relationship("ProductoReceta", back_populates="producto")
     lotes_productos = relationship("LoteProducto", back_populates="producto")
     costos_historicos = relationship("CostoHistorico", back_populates="producto")
+    precios_venta = relationship("PrecioVenta", back_populates="producto")
 
 
 class Receta(Base):
@@ -72,6 +73,7 @@ class Receta(Base):
     productos_recetas = relationship("ProductoReceta", back_populates="receta")
     recetas_insumos = relationship("RecetaInsumo", back_populates="receta")
     lotes_productos = relationship("LoteProducto", back_populates="receta")
+    precios_venta = relationship("PrecioVenta", back_populates="receta")
 
 
 class ProductoReceta(Base):
@@ -217,3 +219,71 @@ class HistorialPrecioInsumo(Base):
 
     insumo = relationship("Insumo", back_populates="historial_precios")
     compra = relationship("Compra")
+
+
+class Recurso(Base):
+    __tablename__ = "recursos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(200), nullable=False)
+    tipo = Column(String(50), nullable=False)
+    periodicidad = Column(String(50), nullable=False, default="MENSUAL")
+    es_fijo = Column(Boolean, nullable=False, default=True)
+    monto = Column(Numeric(12, 2), nullable=False, default=0)
+    descripcion = Column(Text)
+    activo = Column(Boolean, nullable=False, default=True)
+
+
+class PrecioVenta(Base):
+    __tablename__ = "precios_venta"
+
+    id = Column(Integer, primary_key=True, index=True)
+    producto_id = Column(Integer, ForeignKey("productos.id", ondelete="CASCADE"), nullable=False)
+    receta_id = Column(Integer, ForeignKey("recetas.id", ondelete="CASCADE"), nullable=True)
+    precio_con_iva = Column(Numeric(12, 2), nullable=False, default=0)
+    iva_porcentaje = Column(Numeric(5, 2), nullable=False, default=19.00)
+    fecha_inicio = Column(DateTime, nullable=False, server_default=func.now())
+    activo = Column(Boolean, nullable=False, default=True)
+
+    producto = relationship("Producto", back_populates="precios_venta")
+    receta = relationship("Receta", back_populates="precios_venta")
+
+
+class PuntoEquilibrio(Base):
+    __tablename__ = "puntos_equilibrio"
+
+    id = Column(Integer, primary_key=True, index=True)
+    periodo_mes = Column(Integer, nullable=False)
+    periodo_anio = Column(Integer, nullable=False)
+    fecha_calculo = Column(DateTime, nullable=False, server_default=func.now())
+    tasa_iva = Column(Numeric(5, 2), nullable=False, default=19.00)
+
+    costos_fijos_mensuales = Column(Numeric(14, 2), nullable=False, default=0)
+    inversion_inicial_total = Column(Numeric(14, 2), nullable=False, default=0)
+    meta_unidades = Column(Numeric(12, 4), nullable=False, default=0)
+    unidades_equilibrio = Column(Numeric(12, 4), nullable=False, default=0)
+    ventas_equilibrio_pesos = Column(Numeric(14, 2), nullable=False, default=0)
+    utilidad_estimada = Column(Numeric(14, 2), nullable=False, default=0)
+    estado = Column(String(20), nullable=False, default="MAL")
+    diagnostico = Column(Text)
+
+    detalles = relationship("PuntoEquilibrioDetalle", back_populates="punto_equilibrio", cascade="all, delete-orphan")
+
+
+class PuntoEquilibrioDetalle(Base):
+    __tablename__ = "puntos_equilibrio_detalle"
+
+    id = Column(Integer, primary_key=True, index=True)
+    punto_equilibrio_id = Column(Integer, ForeignKey("puntos_equilibrio.id", ondelete="CASCADE"), nullable=False)
+    producto_id = Column(Integer, ForeignKey("productos.id"), nullable=False)
+    receta_id = Column(Integer, ForeignKey("recetas.id"), nullable=True)
+    peso_venta = Column(Numeric(5, 4), nullable=False, default=0)
+    precio_con_iva = Column(Numeric(12, 2), nullable=False, default=0)
+    precio_sin_iva = Column(Numeric(12, 2), nullable=False, default=0)
+    costo_variable_unitario = Column(Numeric(12, 4), nullable=False, default=0)
+    margen_contribucion_unitario = Column(Numeric(12, 4), nullable=False, default=0)
+    unidades_equilibrio = Column(Numeric(12, 4), nullable=False, default=0)
+
+    punto_equilibrio = relationship("PuntoEquilibrio", back_populates="detalles")
+    producto = relationship("Producto")
+    receta = relationship("Receta")

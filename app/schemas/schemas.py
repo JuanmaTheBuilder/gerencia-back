@@ -402,3 +402,108 @@ class MessageResponse(BaseSchema):
 
 class ErrorResponse(BaseSchema):
     detail: str
+
+
+# =====================================================
+# Recursos
+# =====================================================
+
+class RecursoBase(BaseSchema):
+    nombre: str = Field(..., max_length=200)
+    tipo: str = Field(..., pattern="^(FISICO|FINANCIERO|HUMANO|INTANGIBLE_NO_HUMANO)$")
+    periodicidad: str = Field(default="MENSUAL", pattern="^(MENSUAL|UNICO)$")
+    es_fijo: bool = True
+    monto: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
+    descripcion: Optional[str] = None
+    activo: bool = True
+
+
+class RecursoCreate(RecursoBase):
+    pass
+
+
+class RecursoUpdate(BaseSchema):
+    nombre: Optional[str] = Field(None, max_length=200)
+    tipo: Optional[str] = Field(None, pattern="^(FISICO|FINANCIERO|HUMANO|INTANGIBLE_NO_HUMANO)$")
+    periodicidad: Optional[str] = Field(None, pattern="^(MENSUAL|UNICO)$")
+    es_fijo: Optional[bool] = None
+    monto: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    descripcion: Optional[str] = None
+    activo: Optional[bool] = None
+
+
+class Recurso(RecursoBase):
+    id: int
+
+
+# =====================================================
+# Precios de venta
+# =====================================================
+
+class PrecioVentaBase(BaseSchema):
+    producto_id: int
+    receta_id: Optional[int] = None
+    precio_con_iva: Decimal = Field(..., ge=0, decimal_places=2)
+    iva_porcentaje: Decimal = Field(default=Decimal("19.00"), ge=0, decimal_places=2)
+
+
+class PrecioVentaCreate(PrecioVentaBase):
+    pass
+
+
+class PrecioVentaUpdate(BaseSchema):
+    precio_con_iva: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    activo: Optional[bool] = None
+
+
+class PrecioVenta(PrecioVentaBase):
+    id: int
+    fecha_inicio: datetime
+    activo: bool
+
+
+# =====================================================
+# Punto de equilibrio
+# =====================================================
+
+class PuntoEquilibrioProductoInput(BaseSchema):
+    producto_id: int
+    receta_id: Optional[int] = None
+    peso_venta: Decimal = Field(..., gt=0, decimal_places=4)
+
+
+class PuntoEquilibrioInput(BaseSchema):
+    periodo_mes: int = Field(..., ge=1, le=12)
+    periodo_anio: int = Field(..., ge=2000, le=2100)
+    meta_unidades: Decimal = Field(..., ge=0, decimal_places=4)
+    tasa_iva: Decimal = Field(default=Decimal("19.00"), ge=0, decimal_places=2)
+    productos: List[PuntoEquilibrioProductoInput]
+
+
+class PuntoEquilibrioDetalleResponse(BaseSchema):
+    id: int
+    producto_id: int
+    receta_id: Optional[int]
+    peso_venta: Decimal
+    precio_con_iva: Decimal
+    precio_sin_iva: Decimal
+    costo_variable_unitario: Decimal
+    margen_contribucion_unitario: Decimal
+    unidades_equilibrio: Decimal
+
+
+class PuntoEquilibrioResponse(BaseSchema):
+    id: int
+    periodo_mes: int
+    periodo_anio: int
+    fecha_calculo: datetime
+    tasa_iva: Decimal
+    costos_fijos_mensuales: Decimal
+    inversion_inicial_total: Decimal
+    meta_unidades: Decimal
+    unidades_equilibrio: Decimal
+    ventas_equilibrio_pesos: Decimal
+    utilidad_estimada: Decimal
+    estado: str
+    diagnostico: str
+    detalles: List[PuntoEquilibrioDetalleResponse] = []

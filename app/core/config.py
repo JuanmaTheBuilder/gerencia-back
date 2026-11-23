@@ -3,8 +3,8 @@ from typing import List
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql://postgres:Balto2018@localhost:5432/gerencia_costos"
-    DATABASE_URL_TEST: str = "postgresql://postgres:Balto2018@localhost:5432/gerencia_costos_test"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/gerencia_costos"
+    DATABASE_URL_TEST: str = "postgresql://postgres:postgres@localhost:5432/gerencia_costos_test"
     SECRET_KEY: str = "change-me-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

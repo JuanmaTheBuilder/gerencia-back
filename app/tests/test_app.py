@@ -1,7 +1,12 @@
 import os
 
 # Forzar uso de la base de datos de pruebas antes de importar la app
-os.environ["DATABASE_URL"] = "postgresql://postgres:Balto2018@localhost:5432/gerencia_costos_test"
+# Define DATABASE_URL_TEST en el entorno o en .env; nunca escribas credenciales aqui.
+from dotenv import dotenv_values
+_test_url = os.environ.get("DATABASE_URL_TEST") or dotenv_values(".env").get("DATABASE_URL_TEST")
+if not _test_url:
+    raise RuntimeError("Define DATABASE_URL_TEST para correr las pruebas")
+os.environ["DATABASE_URL"] = _test_url
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, Boolean, Text, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, Boolean, Text, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -35,7 +35,7 @@ class Insumo(Base):
     nombre = Column(String(200), nullable=False)
     unidad_medida_id = Column(Integer, ForeignKey("unidades_medida.id"), nullable=False)
     proveedor_id = Column(Integer, ForeignKey("proveedores.id"))
-    precio_compra = Column(Numeric(12, 2), nullable=False, default=0)
+    precio_compra = Column(Numeric(14, 6), nullable=False, default=0)
     stock_actual = Column(Numeric(12, 4), nullable=False, default=0)
     activo = Column(Boolean, nullable=False, default=True)
 
@@ -287,3 +287,14 @@ class PuntoEquilibrioDetalle(Base):
     punto_equilibrio = relationship("PuntoEquilibrio", back_populates="detalles")
     producto = relationship("Producto")
     receta = relationship("Receta")
+
+
+class Plan(Base):
+    """Plan de negocio y proyecciones. Todo el contenido vive en `datos` (JSON validado por PlanDatos)."""
+    __tablename__ = "planes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(200), nullable=False)
+    datos = Column(JSON, nullable=False, default=dict)
+    creado = Column(DateTime, nullable=False, server_default=func.now())
+    actualizado = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())

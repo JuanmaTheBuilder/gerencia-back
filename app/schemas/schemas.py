@@ -85,7 +85,7 @@ class InsumoBase(BaseSchema):
     nombre: str = Field(..., max_length=200)
     unidad_medida_id: int
     proveedor_id: Optional[int] = None
-    precio_compra: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
+    precio_compra: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=6)
     stock_actual: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=4)
     activo: bool = True
 
@@ -98,7 +98,7 @@ class InsumoUpdate(BaseSchema):
     nombre: Optional[str] = Field(None, max_length=200)
     unidad_medida_id: Optional[int] = None
     proveedor_id: Optional[int] = None
-    precio_compra: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    precio_compra: Optional[Decimal] = Field(None, ge=0, decimal_places=6)
     stock_actual: Optional[Decimal] = Field(None, ge=0, decimal_places=4)
     activo: Optional[bool] = None
 

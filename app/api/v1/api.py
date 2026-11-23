@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     recursos,
     precios_venta,
     punto_equilibrio,
+    planes,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -28,3 +29,4 @@ api_router.include_router(reportes.router)
 api_router.include_router(recursos.router)
 api_router.include_router(precios_venta.router)
 api_router.include_router(punto_equilibrio.router)
+api_router.include_router(planes.router)

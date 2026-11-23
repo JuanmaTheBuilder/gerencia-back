@@ -5,6 +5,8 @@ from typing import List
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/gerencia_costos"
     DATABASE_URL_TEST: str = "postgresql://postgres:postgres@localhost:5432/gerencia_costos_test"
+    # Solo para migraciones puntuales contra produccion (alembic). Vacia por defecto.
+    DATABASE_URL_PROD: str = ""
     SECRET_KEY: str = "change-me-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

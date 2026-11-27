@@ -3,6 +3,10 @@
 Diferencia deliberada con el Excel: cada empleado usa sus propios datos (en el Excel hay
 referencias desalineadas entre filas). Decisiones acordadas: salud patronal 8,5 % para todos
 e intereses de cesantias = 1 % del devengado.
+
+ICBF y SENA se cobran a todos los empleados, como en el Excel. Solo la exoneracion legal
+(art. 114-1 E.T.: empleadores exonerados y salarios menores de 10 SMLV) los deja en cero,
+y solo si el plan la activa con `exonerar_parafiscales`.
 """
 from __future__ import annotations
 
@@ -36,6 +40,8 @@ class ParametrosNomina(BaseModel):
     pct_caja: float = 0.04
     pct_icbf: float = 0.03
     pct_sena: float = 0.02
+    # Exoneracion de ICBF y SENA para salarios menores de 10 SMLV (art. 114-1 E.T.). Apagada por defecto.
+    exonerar_parafiscales: bool = False
     # ARL por nivel de riesgo (I a III vienen de la plantilla; IV y V son las tarifas legales)
     arl: dict[str, float] = Field(
         default_factory=lambda: {"I": 0.00522, "II": 0.01044, "III": 0.02436, "IV": 0.0435, "V": 0.0696}
@@ -81,7 +87,8 @@ def liquidar_empleado(e: Empleado, p: ParametrosNomina) -> dict:
     pension_emp = base * p.pct_pension_empleado
     deducciones = salud_emp + pension_emp
 
-    exento = e.salario >= p.smlv * 10  # ICBF y SENA solo desde 10 SMLV
+    # ICBF y SENA: se cobran sobre la base de aportes, salvo exoneracion (salario < 10 SMLV)
+    exonerado = p.exonerar_parafiscales and e.salario < p.smlv * 10
     prov = {
         "cesantias": devengado * p.pct_cesantias,
         "prima": devengado * p.pct_prima,
@@ -90,8 +97,8 @@ def liquidar_empleado(e: Empleado, p: ParametrosNomina) -> dict:
         "salud": base * p.pct_salud_empleador,
         "pension": base * p.pct_pension_empleador,
         "caja": base * p.pct_caja,
-        "icbf": e.salario * p.pct_icbf if exento else 0.0,
-        "sena": e.salario * p.pct_sena if exento else 0.0,
+        "icbf": 0.0 if exonerado else base * p.pct_icbf,
+        "sena": 0.0 if exonerado else base * p.pct_sena,
         "arl": base * p.arl.get(e.riesgo, 0.0),
     }
     total_prov = sum(prov.values())

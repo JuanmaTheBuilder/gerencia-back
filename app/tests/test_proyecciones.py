@@ -74,16 +74,47 @@ def test_nomina_empleado_minimo():
     assert r["auxilio"] == pytest.approx(200_000)
     assert r["devengado"] == pytest.approx(p.smlv + 200_000)
     assert r["total_deducciones"] == pytest.approx(p.smlv * .08)
-    assert r["provisiones"]["icbf"] == 0 and r["provisiones"]["sena"] == 0  # menos de 10 SMLV
+    # ICBF y SENA se cobran tambien a salarios bajos (como en el Excel), sobre la base sin auxilio
+    assert r["provisiones"]["icbf"] == pytest.approx(p.smlv * .03)
+    assert r["provisiones"]["sena"] == pytest.approx(p.smlv * .02)
+
+
+def test_icbf_sena_exoneracion_solo_menores_de_10_smlv():
+    p = ParametrosNomina(exonerar_parafiscales=True)
+    bajo = liquidar_empleado(Empleado(salario=p.smlv * 3), p)
+    alto = liquidar_empleado(Empleado(salario=p.smlv * 10, riesgo="I"), p)
+    assert bajo["provisiones"]["icbf"] == 0 and bajo["provisiones"]["sena"] == 0
+    assert alto["provisiones"]["icbf"] == pytest.approx(p.smlv * 10 * .03)
+    assert alto["provisiones"]["sena"] == pytest.approx(p.smlv * 10 * .02)
 
 
 def test_nomina_con_novedades_e_icbf_sena_desde_10_smlv():
     p = ParametrosNomina()
     r = liquidar_empleado(Empleado(salario=15_000_000, dias=30, comisiones=500_000, riesgo="I"), p)
     assert r["auxilio"] == 0
-    assert r["provisiones"]["icbf"] == pytest.approx(15_000_000 * .03)
-    assert r["provisiones"]["sena"] == pytest.approx(15_000_000 * .02)
+    base = r["devengado"]  # base de aportes = devengado sin auxilio (incluye comisiones), como el Excel
+    assert r["provisiones"]["icbf"] == pytest.approx(base * .03)
+    assert r["provisiones"]["sena"] == pytest.approx(base * .02)
     assert r["costo_empleado"] == pytest.approx(r["devengado"] + r["total_provisiones"])
+
+
+def test_nomina_del_excel_mani_aburra():
+    """Los 5 empleados de la plantilla (hoja 'Nomina global'): total 17.516.888,87 y por area."""
+    p = ParametrosNomina(smlv=1_750_905, auxilio_transporte=249_095, horas_mes=240,
+                         pct_vacaciones=0.0416, pct_cesantias=0.0833, pct_prima=0.0833)
+    emps = [
+        Empleado(nombre="Operario", area="produccion", salario=2_000_000, riesgo="III"),
+        Empleado(nombre="Administrador", area="administracion", salario=2_800_000, riesgo="I"),
+        Empleado(nombre="Encargado ventas", area="ventas", salario=2_200_000, riesgo="I"),
+        Empleado(nombre="Auxiliar 1", area="produccion", salario=1_750_905, riesgo="III"),
+        Empleado(nombre="Auxiliar 2", area="produccion", salario=1_750_905, riesgo="III"),
+    ]
+    from app.domain.proyecciones.nomina import liquidar_nomina
+    nm = liquidar_nomina(emps, p)
+    assert nm["costo_total_mensual"] == pytest.approx(17_516_888.87, abs=0.05)
+    assert nm["costo_mensual_por_area"]["produccion"] == pytest.approx(9_338_618.52, abs=0.05)
+    assert nm["costo_mensual_por_area"]["administracion"] == pytest.approx(4_544_661.18, abs=0.05)
+    assert nm["costo_mensual_por_area"]["ventas"] == pytest.approx(3_633_609.18, abs=0.05)
 
 
 def test_reportes_se_generan():

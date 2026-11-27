@@ -435,12 +435,13 @@ def _hoja_nomina_adjunto(ws, d: PlanDatos):
     h.calculo("D15", "=B3*E15"); h.entrada("E15", p.pct_pension_empleador, "0.00%")
     h.put("A16", "ARL (riesgo III)")
     h.calculo("D16", "=B3*E16"); h.entrada("E16", p.arl.get("III", 0), "0.000%")
-    for fila, nombre, pct in ((18, "CONFA", p.pct_caja), (19, "ICBF", 0), (20, "SENA", 0)):
+    exo = p.exonerar_parafiscales  # el salario de referencia (SMLV) siempre es menor de 10 SMLV
+    for fila, nombre, pct in ((18, "CONFA", p.pct_caja), (19, "ICBF", 0 if exo else p.pct_icbf), (20, "SENA", 0 if exo else p.pct_sena)):
         h.put(f"A{fila}", nombre)
         h.calculo(f"B{fila}", f"=B3*C{fila}")
         h.entrada(f"C{fila}", pct, "0.00%")
-    h.put("D19", "Desde 10 SMLV", borde=False)
-    h.put("D20", "Desde 10 SMLV", borde=False)
+    h.put("D19", "Sin auxilio", borde=False)
+    h.put("D20", "Sin auxilio", borde=False)
     h.put("H8", "NETO A PAGAR", GRIS, bold=True)
     h.calculo("I8", "=B3+B4-B14-B15")
     h.put("H10", "COSTO", GRIS, bold=True)
@@ -472,8 +473,8 @@ def _hoja_nomina_global(ws, d: PlanDatos):
         ("Cesantías", p.pct_cesantias, "0.00%"), ("Prima", p.pct_prima, "0.00%"),
         ("Vacaciones", p.pct_vacaciones, "0.00%"), ("Intereses de cesantías", p.pct_intereses, "0.00%"),
         ("Salud empleador", p.pct_salud_empleador, "0.00%"), ("Pensión empleador", p.pct_pension_empleador, "0.00%"),
-        ("Caja de compensación", p.pct_caja, "0.00%"), ("ICBF (desde 10 SMLV)", p.pct_icbf, "0.00%"),
-        ("SENA (desde 10 SMLV)", p.pct_sena, "0.00%"),
+        ("Caja de compensación", p.pct_caja, "0.00%"), ("ICBF", p.pct_icbf, "0.00%"),
+        ("SENA", p.pct_sena, "0.00%"),
     ]
     ref = {}
     r = 4
@@ -589,8 +590,12 @@ def _hoja_nomina_global(ws, d: PlanDatos):
         h.calculo(f"F{r}", f"={base}*{ref['Salud empleador']}")
         h.calculo(f"G{r}", f"={base}*{ref['Pensión empleador']}")
         h.calculo(f"H{r}", f"={base}*{ref['Caja de compensación']}")
-        h.calculo(f"I{r}", f"=IF(B{g}>={SM}*10,B{g}*{ref['ICBF (desde 10 SMLV)']},0)")
-        h.calculo(f"J{r}", f"=IF(B{g}>={SM}*10,B{g}*{ref['SENA (desde 10 SMLV)']},0)")
+        if p.exonerar_parafiscales:
+            h.calculo(f"I{r}", f"=IF(B{g}<{SM}*10,0,{base}*{ref['ICBF']})")
+            h.calculo(f"J{r}", f"=IF(B{g}<{SM}*10,0,{base}*{ref['SENA']})")
+        else:
+            h.calculo(f"I{r}", f"={base}*{ref['ICBF']}")
+            h.calculo(f"J{r}", f"={base}*{ref['SENA']}")
         h.calculo(f"K{r}", f"={base}*M{s}")
         h.calculo(f"L{r}", f"=SUM(B{r}:K{r})")
         h.calculo(f"M{r}", f"=L{r}+G{g}")
